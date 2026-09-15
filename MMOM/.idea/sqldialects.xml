@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/30851522-b4b5-44a9-bc43-7078967202bb/console.sql" dialect="PostgreSQL" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/37a4289e-b207-4405-b905-2908fe336ca3/console.sql" dialect="PostgreSQL" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/9c42f242-9c3d-442e-956f-f9717ac0ccde/六合一报表demo.sql" dialect="PostgreSQL" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/9c42f242-9c3d-442e-956f-f9717ac0ccde/生产订单查询页面sql.sql" dialect="PostgreSQL" />
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/9c42f242-9c3d-442e-956f-f9717ac0ccde/生产进度报表.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MCT项目/6号屏底盘+整机工作中心数据.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MCT项目/工作中心架位.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MCT项目/月计划数+周完成率.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MCT项目/根据车号(ID)查询当前工序的工作中心以及工作中心描述.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MESU/add_rack_no.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES基础查询/整机实绩报表.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES基础查询/查询工厂建模.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/禅道周报工单查询/周报.sql" dialect="MySQL" />
+  </component>
+</project>
