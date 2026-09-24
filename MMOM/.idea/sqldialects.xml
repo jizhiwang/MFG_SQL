@@ -15,5 +15,7 @@
     <file url="file://$PROJECT_DIR$/MESU/add_rack_no.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/数据修复/IM260813374-临时计划已报完已审核完还是显示已填报不是显示未完成.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/禅道周报工单查询/周报.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/页面查询/工序任务生产单件ID.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/页面查询/整机部件入库.sql" dialect="Oracle" />
   </component>
 </project>
