@@ -153,5 +153,21 @@
       <jdbc-url>jdbc:oracle:thin:@//xd02-scan.xcmg.com:1521/prdmes2_tj</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="二期正式基础" uuid="80ba3530-77f7-43db-b18c-a487c2a90173">
+      <driver-ref>oracle.19</driver-ref>
+      <synchronize>true</synchronize>
+      <auto-commit>false</auto-commit>
+      <jdbc-driver>oracle.jdbc.OracleDriver</jdbc-driver>
+      <jdbc-url>jdbc:oracle:thin:@//xd02-scan.xcmg.com:1521/prdmes2_jc</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+    <data-source source="LOCAL" name="SWY_正式库" uuid="1b0607a9-75b1-414a-ad85-c673e5f26727">
+      <driver-ref>oracle.19</driver-ref>
+      <synchronize>true</synchronize>
+      <auto-commit>false</auto-commit>
+      <jdbc-driver>oracle.jdbc.OracleDriver</jdbc-driver>
+      <jdbc-url>jdbc:oracle:thin:@//xd02-scan.xcmg.com:1521/prdmes2_swy</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
