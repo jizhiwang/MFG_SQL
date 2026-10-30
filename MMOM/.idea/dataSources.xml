@@ -184,5 +184,13 @@
       <jdbc-url>jdbc:oracle:thin:@//xd02-scan.xcmg.com:1521/prdmes2_cy</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="建机正式库" uuid="f45d844c-3365-46ec-89ee-d4d637b60374">
+      <driver-ref>oracle.19</driver-ref>
+      <synchronize>true</synchronize>
+      <auto-commit>false</auto-commit>
+      <jdbc-driver>oracle.jdbc.OracleDriver</jdbc-driver>
+      <jdbc-url>jdbc:oracle:thin:@//xd02-scan.xcmg.com:1521/prdmes2_jj</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

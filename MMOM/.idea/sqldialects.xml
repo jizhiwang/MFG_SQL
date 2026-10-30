@@ -8,10 +8,15 @@
     <file url="file://$PROJECT_DIR$/MCT项目/月计划数+周完成率.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MCT项目/根据车号(ID)查询当前工序的工作中心以及工作中心描述.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/18409 IM26100576-结构件钢印号绑定车号错误需纠正.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/MES/临时查询.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/Oracle/生产订单.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/MES/Oracle配盘执行进度查询新.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/PostgreSQL配盘执行进度查询新.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/MES/临时查询.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/MES/事务sql.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/事务诊断.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/塔机.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/MES/塔机报表/结构外协进度报表.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/MES/塔机报表/装配进度报表.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/MES/塔机报表开发.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/MES/工艺路线缺少单位.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/整机实绩报表.sql" dialect="PostgreSQL" />

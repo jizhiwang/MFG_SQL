@@ -480,19 +480,19 @@ SELECT T.BATCH_NO                               AS 批次号,
        T.MODELS                                 AS 机型型号,
        T.QTY                                    AS 台套,
 
-       SUBSTR(
-               T.BATCH_NO,
-               INSTR(T.BATCH_NO, '/', -1) + 1
-       )                                        AS 累计,
+       CASE
+           WHEN REGEXP_LIKE(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
+               THEN SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1)
+       END                                      AS 累计,
 
        COALESCE(BFC.F_PROCUREMENT_COUNT, 0)     AS 外协,
 
-       TO_NUMBER(
-               SUBSTR(
-                       T.BATCH_NO,
-                       INSTR(T.BATCH_NO, '/', -1) + 1
-               )
-       ) + COALESCE(BFC.F_PROCUREMENT_COUNT, 0) AS 产出,
+       CASE
+           WHEN REGEXP_LIKE(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
+               THEN TO_NUMBER(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1))
+           ELSE 0
+       END
+       + COALESCE(BFC.F_PROCUREMENT_COUNT, 0)   AS 产出,
 
        COALESCE(OC.ONLINE_COUNT, 0)             AS 上线,
 
