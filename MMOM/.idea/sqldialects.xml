@@ -8,6 +8,7 @@
     <file url="file://$PROJECT_DIR$/MCT项目/月计划数+周完成率.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MCT项目/根据车号(ID)查询当前工序的工作中心以及工作中心描述.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/18409 IM26100576-结构件钢印号绑定车号错误需纠正.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/20565 IM26111466-临时订单创建BUG.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/Oracle/生产订单.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/MES/Oracle配盘执行进度查询新.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/PostgreSQL配盘执行进度查询新.sql" dialect="Oracle" />

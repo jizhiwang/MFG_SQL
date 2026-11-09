@@ -1,231 +1,214 @@
-WITH BOM_F_COUNT AS (SELECT BOM.PRODUCT_ORDER_ID,
-                            COUNT(*) AS F_PROCUREMENT_COUNT
-                     FROM MBM_APS_PRODUCT_ORDER_BOM BOM
-                              INNER JOIN MBM_MDM_PART_VERSION PV_BOM
-                                         ON BOM.PART_VERSION_ID = PV_BOM.ID
-                                             AND (PV_BOM.DELETE_FLAG <> '1' OR PV_BOM.DELETE_FLAG IS NULL)
-                                             AND PV_BOM.PROCUREMENT_TYPE = 'F'
-                     WHERE (BOM.DELETE_FLAG <> '1' OR BOM.DELETE_FLAG IS NULL)
-                     GROUP BY BOM.PRODUCT_ORDER_ID),
-     CLASSIFICATION_DETAIL AS (SELECT DISTINCT CPL.PART_VERSION_ID,
-                                               CPL.PART_MASTER_ID,
-                                               T1.ID        AS T1_ID,
-                                               T1.NAME      AS T1_NAME,
-                                               T1.ROOT_NODE AS T1_ROOT_NODE,
-                                               T2.ID        AS T2_ID,
-                                               T2.NAME      AS T2_NAME,
-                                               T2.ROOT_NODE AS T2_ROOT_NODE
-                               FROM MBM_MDM_CLASSIFICATION_PART_LINK CPL
-                                        INNER JOIN MBM_MDM_CLASSIFICATION T2
-                                                   ON T2.ID = CPL.CLASSIFICATION_ID
-                                                       AND (T2.DELETE_FLAG <> '1' OR T2.DELETE_FLAG IS NULL)
-                                        INNER JOIN MBM_MDM_CLASSIFICATION T1
-                                                   ON T1.ID = T2.PARENT_NODE
-                                                       AND (T1.DELETE_FLAG <> '1' OR T1.DELETE_FLAG IS NULL)
-                               WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)),
-     /* 新增：获取产品型号分类信息 */
-     PRODUCT_MODEL_CLASSIFICATION AS (SELECT CPL.PART_VERSION_ID,
-                                             CPL.PART_MASTER_ID,
-                                             C.NAME AS MODEL_NAME
-                                      FROM MBM_MDM_CLASSIFICATION_PART_LINK CPL
-                                               INNER JOIN MBM_MDM_CLASSIFICATION C
-                                                          ON C.ID = CPL.CLASSIFICATION_ID
-                                                              AND (C.DELETE_FLAG <> '1' OR C.DELETE_FLAG IS NULL)
-                                               INNER JOIN MBM_MDM_CLASSIFICATION_SET CS
-                                                          ON CS.ID = C.ROOT_NODE
-                                                              AND (CS.DELETE_FLAG <> '1' OR CS.DELETE_FLAG IS NULL)
-                                                              AND CS."NUMBER" = 'product_model'
-                                      WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)),
-     ONLINE_COUNT AS (SELECT PO.BATCH_NO,
-                             PM."NUMBER" AS PART_NUMBER,
-                             COUNT(*)    AS ONLINE_COUNT
-                      FROM MBM_MES_PROCESS_TECH_ORDER_ID T
-
-                               LEFT JOIN MBM_APS_PROCESS_TECH_ORDER PTO
-                                         ON T.MES_PROCESS_TECH_ORDER_ID = PTO.ID
-                                             AND (PTO.DELETE_FLAG <> '1' OR PTO.DELETE_FLAG IS NULL)
-
-                               LEFT JOIN MBM_APS_PRODUCT_ORDER PO
-                                         ON PTO.PRODUCT_ORDER_ID = PO.ID
-                                             AND (PO.DELETE_FLAG <> '1' OR PO.DELETE_FLAG IS NULL)
-
-                               LEFT JOIN MBM_MDM_PART_VERSION PV
-                                         ON T.PART_VERSION_ID = PV.ID
-                                             AND (PV.DELETE_FLAG <> '1' OR PV.DELETE_FLAG IS NULL)
-
-                               LEFT JOIN MBM_MDM_WORK_AREA_VERSION WAV_BF
-                                         ON PTO.BRANCH_FACTORY_ID = WAV_BF.ID
-                                             AND (WAV_BF.DELETE_FLAG <> '1' OR WAV_BF.DELETE_FLAG IS NULL)
-
-                               LEFT JOIN MBM_MDM_WORK_AREA_MASTER WAM_BF
-                                         ON WAV_BF.WORK_AREA_MASTER_ID = WAM_BF.ID
-                                             AND (WAM_BF.DELETE_FLAG <> '1' OR WAM_BF.DELETE_FLAG IS NULL)
-
-                               LEFT JOIN MBM_MDM_PART_MASTER PM
-                                         ON PV.PART_MASTER_ID = PM.ID
-                                             AND (PM.DELETE_FLAG <> '1' OR PM.DELETE_FLAG IS NULL)
-
-                      WHERE WAM_BF.NAME = '涂装分厂'
-                        AND PTO.WHETHER_REPORTING_POINT_WHEN_GENERATE = '1'
-                        AND T.PRODUCTION_STATUS = '20'
-                        AND PV.PRODUCTION_MANAGEMENT_MODE = '10'
-
-                        AND (PO.AUXILIARY_TYPE <> 'C' OR PO.AUXILIARY_TYPE IS NULL)
-
-                        AND (
-                          PO.KD_ORDER <> 'X'
-                              OR PO.KD_ORDER IS NULL
-                              OR (PO.AUXILIARY_TYPE <> 'A' OR PO.AUXILIARY_TYPE IS NULL)
-                          )
-
-                        AND (T.DELETE_FLAG <> '1' OR T.DELETE_FLAG IS NULL)
-
-                      GROUP BY PO.BATCH_NO,
-                               PM."NUMBER")
-
-SELECT T.BATCH_NO                               AS 批次号,
-       T.MODELS                                 AS 机型型号,
-       T.QTY                                    AS 台套,
-
-       /* 累计：末段非纯数字时返回 NULL，避免结果集污染 */
+WITH
+/* 发运订单主数据：不在此处限制部件分类。 */
+SHIP_ORDER AS (
+    SELECT T.ID, T.FACTORY_ID, T.BATCH_NO, T.PART_VERSION_ID, T.QTY
+    FROM MBM_APS_PRODUCT_ORDER T
+    WHERE T.AUXILIARY_TYPE = 'C'
+      AND (T.DELETE_FLAG <> '1' OR T.DELETE_FLAG IS NULL)
+      AND INSTR(T.BATCH_NO, 'LS') = 0
+      /* 固定批次与北京时间当月批次取并集。 */
+      AND (
+          T.BATCH_NO IN (
+              '261020-XGT360A-20S1-1/4',
+              '261029-XGT7528A-18S1-3/9',
+              '261031-XGT7026-12S1-5/63',
+              '261031-XGT360A-20S1-3/7',
+              '261031-XGT7520-12S1-2/5',
+              '261031-XGT7026-12S1-5/68',
+              '260730-600-25S1-2/11',
+              '260730-600-25S1-2/13',
+              '260923-190-12S-5/11',
+              '260908-800-40S-4/13',
+              '260923-800E-36S-2/2',
+              '260508-370E-16S1-1/1',
+              '260101-3300-220S-2/7',
+              '260907-1050-50S-1/7',
+              '260705-3100-160S-1/4',
+              '260817-1380-65S-1/3',
+              '260101-3300-220S-2/9',
+              '261031-XGT1050-50S-1/8',
+              '260228-1700-100S-2/8',
+              '260807-3100-160S-1/5',
+              '260812-3100-160S-1/6',
+              '260101-3300-220S-2/11'
+          )
+          OR SUBSTR(T.BATCH_NO, 1, 4) = TO_CHAR(SYSTIMESTAMP AT TIME ZONE 'Asia/Shanghai', 'YYMM')
+      )
+),
+PRODUCT_MODEL_CLASSIFICATION AS (
+    SELECT DISTINCT CPL.PART_VERSION_ID, CPL.PART_MASTER_ID,
+           C.NAME AS MODEL_NAME
+    FROM MBM_MDM_CLASSIFICATION_PART_LINK CPL
+    JOIN MBM_MDM_CLASSIFICATION C
+      ON C.ID = CPL.CLASSIFICATION_ID
+     AND (C.DELETE_FLAG <> '1' OR C.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_CLASSIFICATION_SET CS
+      ON CS.ID = C.ROOT_NODE
+     AND (CS.DELETE_FLAG <> '1' OR CS.DELETE_FLAG IS NULL)
+     AND CS."NUMBER" = 'product_model'
+    WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)
+),
+SHIP_MODEL AS (
+    SELECT S.ID, S.FACTORY_ID, S.BATCH_NO, S.QTY, PMC.MODEL_NAME
+    FROM SHIP_ORDER S
+    LEFT JOIN MBM_MDM_PART_VERSION PV
+      ON PV.ID = S.PART_VERSION_ID
+     AND (PV.DELETE_FLAG <> '1' OR PV.DELETE_FLAG IS NULL)
+    LEFT JOIN PRODUCT_MODEL_CLASSIFICATION PMC
+      ON PMC.PART_VERSION_ID = PV.ID
+     AND PMC.PART_MASTER_ID = PV.PART_MASTER_ID
+),
+SHIP_HEADER AS (
+    SELECT FACTORY_ID, BATCH_NO, MODEL_NAME, SUM(QTY) AS SET_QTY
+    FROM SHIP_MODEL
+    GROUP BY FACTORY_ID, BATCH_NO, MODEL_NAME
+),
+CLASSIFICATION_DETAIL AS (
+    SELECT DISTINCT CPL.PART_VERSION_ID, CPL.PART_MASTER_ID,
+           T1.ID AS T1_ID, T1.NAME AS T1_NAME,
+           T1.ROOT_NODE AS T1_ROOT_NODE,
+           T2.ID AS T2_ID, T2.NAME AS T2_NAME,
+           T2.ROOT_NODE AS T2_ROOT_NODE
+    FROM MBM_MDM_CLASSIFICATION_PART_LINK CPL
+    JOIN MBM_MDM_CLASSIFICATION T2
+      ON T2.ID = CPL.CLASSIFICATION_ID
+     AND (T2.DELETE_FLAG <> '1' OR T2.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_CLASSIFICATION T1
+      ON T1.ID = T2.PARENT_NODE
+     AND (T1.DELETE_FLAG <> '1' OR T1.DELETE_FLAG IS NULL)
+    WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)
+      AND T1.NAME IN ('塔机', '升降机')
+),
+/* 部件仅取 C 类发运订单自身 BOM；同一 BOM、同一分类去重。 */
+BOM_DETAIL AS (
+    SELECT DISTINCT S.FACTORY_ID, S.BATCH_NO, S.MODEL_NAME,
+           BOM.ID AS BOM_ID, PV.PROCUREMENT_TYPE,
+           PM."NUMBER" AS PART_NUMBER,
+           CD.T1_ID, CD.T1_NAME, CD.T1_ROOT_NODE,
+           CD.T2_ID, CD.T2_NAME, CD.T2_ROOT_NODE
+    FROM SHIP_MODEL S
+    JOIN MBM_APS_PRODUCT_ORDER_BOM BOM
+      ON BOM.PRODUCT_ORDER_ID = S.ID
+     AND (BOM.DELETE_FLAG <> '1' OR BOM.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_PART_VERSION PV
+      ON PV.ID = BOM.PART_VERSION_ID
+     AND (PV.DELETE_FLAG <> '1' OR PV.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_PART_MASTER PM
+      ON PM.ID = PV.PART_MASTER_ID
+     AND (PM.DELETE_FLAG <> '1' OR PM.DELETE_FLAG IS NULL)
+    JOIN CLASSIFICATION_DETAIL CD
+      ON CD.PART_VERSION_ID = PV.ID
+     AND CD.PART_MASTER_ID = PM.ID
+),
+/* 计划按 BOM 行数；外协按其中采购类型 F 的行数。 */
+BOM_METRICS AS (
+    SELECT FACTORY_ID, BATCH_NO, MODEL_NAME,
+           T1_ID, T1_NAME, T1_ROOT_NODE,
+           T2_ID, T2_NAME, T2_ROOT_NODE,
+           COUNT(*) AS PLAN_N,
+           SUM(CASE WHEN PROCUREMENT_TYPE = 'F' THEN 1 ELSE 0 END) AS OUTSOURCE_N
+    FROM BOM_DETAIL
+    GROUP BY FACTORY_ID, BATCH_NO, MODEL_NAME,
+             T1_ID, T1_NAME, T1_ROOT_NODE,
+             T2_ID, T2_NAME, T2_ROOT_NODE
+),
+/* 上线沿用原报表条件，增加工厂维度以避免跨工厂混算。 */
+ONLINE_COUNT AS (
+    SELECT PO.FACTORY_ID, PO.BATCH_NO,
+           PM."NUMBER" AS PART_NUMBER, COUNT(*) AS ONLINE_N
+    FROM MBM_MES_PROCESS_TECH_ORDER_ID P
+    JOIN MBM_APS_PROCESS_TECH_ORDER PTO
+      ON P.MES_PROCESS_TECH_ORDER_ID = PTO.ID
+     AND (PTO.DELETE_FLAG <> '1' OR PTO.DELETE_FLAG IS NULL)
+    JOIN MBM_APS_PRODUCT_ORDER PO
+      ON PTO.PRODUCT_ORDER_ID = PO.ID
+     AND (PO.DELETE_FLAG <> '1' OR PO.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_PART_VERSION PV
+      ON P.PART_VERSION_ID = PV.ID
+     AND (PV.DELETE_FLAG <> '1' OR PV.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_PART_MASTER PM
+      ON PV.PART_MASTER_ID = PM.ID
+     AND (PM.DELETE_FLAG <> '1' OR PM.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_WORK_AREA_VERSION BF
+      ON PTO.BRANCH_FACTORY_ID = BF.ID
+     AND (BF.DELETE_FLAG <> '1' OR BF.DELETE_FLAG IS NULL)
+    JOIN MBM_MDM_WORK_AREA_MASTER BFM
+      ON BF.WORK_AREA_MASTER_ID = BFM.ID
+     AND (BFM.DELETE_FLAG <> '1' OR BFM.DELETE_FLAG IS NULL)
+    WHERE BFM.NAME = '涂装分厂'
+      AND PTO.WHETHER_REPORTING_POINT_WHEN_GENERATE = '1'
+      AND P.PRODUCTION_STATUS = '20'
+      AND PV.PRODUCTION_MANAGEMENT_MODE = '10'
+      AND (PO.AUXILIARY_TYPE <> 'C' OR PO.AUXILIARY_TYPE IS NULL)
+      AND (PO.KD_ORDER <> 'X' OR PO.KD_ORDER IS NULL
+           OR PO.AUXILIARY_TYPE <> 'A' OR PO.AUXILIARY_TYPE IS NULL)
+      AND (P.DELETE_FLAG <> '1' OR P.DELETE_FLAG IS NULL)
+    GROUP BY PO.FACTORY_ID, PO.BATCH_NO, PM."NUMBER"
+),
+/* 同批次同部件的同一物料，其上线数只累计一次。 */
+BOM_PART AS (
+    SELECT DISTINCT FACTORY_ID, BATCH_NO, MODEL_NAME, T2_ID, PART_NUMBER
+    FROM BOM_DETAIL
+),
+ONLINE_METRICS AS (
+    SELECT B.FACTORY_ID, B.BATCH_NO, B.MODEL_NAME, B.T2_ID,
+           SUM(COALESCE(O.ONLINE_N, 0)) AS ONLINE_N
+    FROM BOM_PART B
+    LEFT JOIN ONLINE_COUNT O
+      ON O.FACTORY_ID = B.FACTORY_ID
+     AND O.BATCH_NO = B.BATCH_NO
+     AND O.PART_NUMBER = B.PART_NUMBER
+    GROUP BY B.FACTORY_ID, B.BATCH_NO, B.MODEL_NAME, B.T2_ID
+)
+SELECT H.FACTORY_ID AS "工厂ID",
+       FM.SOURCE_SYSTEM_NUMBER AS "工厂代码",
+       FM.NAME AS "工厂名称",
+       H.BATCH_NO AS "批次号",
+       SUBSTR(H.BATCH_NO, 1, 4) AS "时间",
+       COALESCE(TRIM(H.MODEL_NAME), '机型为空') AS "型号",
+       H.SET_QTY AS "台套",
        CASE
-           WHEN REGEXP_LIKE(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
-               THEN SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1)
-       END                                      AS 累计,
+           WHEN REGEXP_LIKE(SUBSTR(H.BATCH_NO, INSTR(H.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
+           THEN SUBSTR(H.BATCH_NO, INSTR(H.BATCH_NO, '/', -1) + 1)
+       END AS "累计",
+       B.T1_ID AS "一级分类ID",
+       B.T1_NAME AS "一级分类名称",
+       B.T1_ROOT_NODE AS "一级分类ROOT_NODE",
+       B.T2_ID AS "二级分类ID",
+       B.T2_NAME AS "二级分类名称",
+       B.T2_ROOT_NODE AS "二级分类ROOT_NODE",
+       B.T2_ROOT_NODE AS "根",
+       B.PLAN_N AS "计划",
+       B.OUTSOURCE_N AS "外协",
+       CASE WHEN B.T2_ID IS NOT NULL THEN
+           CASE
+               WHEN REGEXP_LIKE(SUBSTR(H.BATCH_NO, INSTR(H.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
+               THEN TO_NUMBER(SUBSTR(H.BATCH_NO, INSTR(H.BATCH_NO, '/', -1) + 1))
+               ELSE 0
+           END + B.OUTSOURCE_N
+       END AS "产出",
+       CASE WHEN B.T2_ID IS NOT NULL THEN COALESCE(O.ONLINE_N, 0) END AS "上线"
+FROM SHIP_HEADER H
+LEFT JOIN BOM_METRICS B
+  ON B.FACTORY_ID = H.FACTORY_ID AND B.BATCH_NO = H.BATCH_NO
+ AND (B.MODEL_NAME = H.MODEL_NAME OR (B.MODEL_NAME IS NULL AND H.MODEL_NAME IS NULL))
+/* 只过滤部件，保留没有匹配部件的批次行。 */
+ AND B.T1_ID IS NOT NULL
+  AND B.T2_ID IS NOT NULL
+  AND TRIM(B.T1_NAME) IS NOT NULL
+  AND TRIM(B.T2_NAME) IS NOT NULL
+  AND B.T2_NAME IN (
+      '起重臂', '上支座', '下支座', '爬升架', '特殊节', '标准节',
+      '基础节', '加强节', '塔头/塔帽', '撑架', '回转塔身', '平衡臂', '预埋节'
+  )
+LEFT JOIN ONLINE_METRICS O
+  ON O.FACTORY_ID = H.FACTORY_ID AND O.BATCH_NO = H.BATCH_NO
+ AND O.T2_ID = B.T2_ID
+ AND (O.MODEL_NAME = H.MODEL_NAME OR (O.MODEL_NAME IS NULL AND H.MODEL_NAME IS NULL))
+LEFT JOIN MBM_MDM_WORK_AREA_VERSION F
+  ON F.ID = H.FACTORY_ID AND (F.DELETE_FLAG <> '1' OR F.DELETE_FLAG IS NULL)
+LEFT JOIN MBM_MDM_WORK_AREA_MASTER FM
+  ON FM.ID = F.WORK_AREA_MASTER_ID AND (FM.DELETE_FLAG <> '1' OR FM.DELETE_FLAG IS NULL)
 
-       COALESCE(
-               BFC.F_PROCUREMENT_COUNT,
-               0
-       )                                        AS 外协,
+ORDER BY H.BATCH_NO, H.FACTORY_ID, H.MODEL_NAME, B.T2_ID
 
-       /* 产出：末段非纯数字时按 0 计，彻底消除 ORA-01722 */
-       CASE
-           WHEN REGEXP_LIKE(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
-               THEN TO_NUMBER(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1))
-           ELSE 0
-       END
-       + COALESCE(BFC.F_PROCUREMENT_COUNT, 0)   AS 产出,
-
-
-       COALESCE(
-               OC.ONLINE_COUNT,
-               0
-       )                                        AS 上线,
-
-    /*
-     * 一级分类
-     */
-       CD.T1_ID                                 AS 一级分类ID,
-       CD.T1_NAME                               AS 一级分类名称,
-       CD.T1_ROOT_NODE                          AS 一级分类ROOT_NODE,
-
-    /*
-     * 二级分类
-     */
-       CD.T2_ID                                 AS 二级分类ID,
-       CD.T2_NAME                               AS 二级分类名称,
-       CD.T2_ROOT_NODE                          AS 二级分类ROOT_NODE,
-
-       T."NUMBER"                               AS "订单号",
-
-       COUNT(T."NUMBER") OVER (
-           PARTITION BY T.BATCH_NO
-           )                                    AS "计划",
-
-    /*
-     * 根
-     */
-       CD.T2_ROOT_NODE                          AS 根,
-
-       BF_WAM.NAME                              AS 分厂,
-       WS_WAM.NAME                              AS 产线,
-
-       PM."NUMBER"                              AS 物料号,
-       PM.NAME                                  AS 物料名称,
-
-       T.COMPLETE_QTY                           AS 完工数,
-       T.ORDER_STATE                            AS 订单状态,
-       T.LOGISTICS_STATUS                       AS 配盘状态,
-
-       T.SUGGEST_START                          AS SCP计划开始,
-       T.SUGGEST_END                            AS SCP计划结束,
-
-       T.PLAN_START                             AS MES计划开始,
-       T.PLAN_END                               AS MES计划结束,
-
-       T.ACTUAL_START                           AS 实际开始,
-       T.ACTUAL_END                             AS 实际结束,
-
-       T.AUXILIARY_TYPE                         AS AUXILIARYTYPE,
-
-       FAC_WAM.SOURCE_SYSTEM_NUMBER             AS 工厂代码,
-       BF_WAM.SOURCE_SYSTEM_NUMBER              AS 分厂编码,
-       WS_WAM.SOURCE_SYSTEM_NUMBER              AS 产线编码,
-
-       FAC_WAM.NAME                             AS 工厂名称,
-
-       T.WBS                                    AS WBS,
-
-       PV.SPECIFICATION_MODEL                   AS 机型,
-
-       /* 新增：产品型号（来自分类关联表） */
-       PMC.MODEL_NAME                           AS 型号
-
-FROM MBM_APS_PRODUCT_ORDER T
-
-         LEFT JOIN BOM_F_COUNT BFC
-                   ON T.ID = BFC.PRODUCT_ORDER_ID
-
-         LEFT JOIN MBM_MDM_WORK_AREA_VERSION BF
-                   ON T.BRANCH_FACTORY_ID = BF.ID
-                       AND (BF.DELETE_FLAG <> '1' OR BF.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_WORK_AREA_MASTER BF_WAM
-                   ON BF.WORK_AREA_MASTER_ID = BF_WAM.ID
-                       AND (BF_WAM.DELETE_FLAG <> '1' OR BF_WAM.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_WORK_AREA_VERSION WS
-                   ON T.WORK_SEGMENT_ID = WS.ID
-                       AND (WS.DELETE_FLAG <> '1' OR WS.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_WORK_AREA_MASTER WS_WAM
-                   ON WS.WORK_AREA_MASTER_ID = WS_WAM.ID
-                       AND (WS_WAM.DELETE_FLAG <> '1' OR WS_WAM.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_PART_VERSION PV
-                   ON T.PART_VERSION_ID = PV.ID
-                       AND (PV.DELETE_FLAG <> '1' OR PV.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_PART_MASTER PM
-                   ON PV.PART_MASTER_ID = PM.ID
-                       AND (PM.DELETE_FLAG <> '1' OR PM.DELETE_FLAG IS NULL)
-
-         INNER JOIN CLASSIFICATION_DETAIL CD
-                    ON CD.PART_VERSION_ID = PV.ID
-                        AND CD.PART_MASTER_ID = PM.ID
-                        AND CD.T1_NAME IN ('塔机', '升降机')
-
-         LEFT JOIN ONLINE_COUNT OC
-                   ON OC.BATCH_NO = T.BATCH_NO
-                       AND OC.PART_NUMBER = PM."NUMBER"
-
-         LEFT JOIN MBM_MDM_WORK_AREA_VERSION FAC
-                   ON T.FACTORY_ID = FAC.ID
-                       AND (FAC.DELETE_FLAG <> '1' OR FAC.DELETE_FLAG IS NULL)
-
-         LEFT JOIN MBM_MDM_WORK_AREA_MASTER FAC_WAM
-                   ON FAC.WORK_AREA_MASTER_ID = FAC_WAM.ID
-                       AND (FAC_WAM.DELETE_FLAG <> '1' OR FAC_WAM.DELETE_FLAG IS NULL)
-
-         /* 新增：关联产品型号分类 */
-         LEFT JOIN PRODUCT_MODEL_CLASSIFICATION PMC
-                   ON PMC.PART_VERSION_ID = PV.ID
-                       AND PMC.PART_MASTER_ID = PM.ID
-
-WHERE
-
-1= 1
-and (T.DELETE_FLAG <> '1' OR T.DELETE_FLAG IS NULL)
-/* 去除批次号包含LS的数据 - 使用INSTR性能更优 */
-AND INSTR(T.BATCH_NO, 'LS') = 0
-ORDER BY T.BATCH_NO, T."NUMBER";

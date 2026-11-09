@@ -24,8 +24,8 @@ WITH BOM_F_COUNT AS (SELECT BOM.PRODUCT_ORDER_ID,
                                                        AND (T1.DELETE_FLAG <> '1' OR T1.DELETE_FLAG IS NULL)
                                WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)),
      PRODUCT_MODEL_CLASSIFICATION AS (SELECT DISTINCT CPL.PART_VERSION_ID,
-                                             CPL.PART_MASTER_ID,
-                                             C.NAME AS MODEL_NAME
+                                                      CPL.PART_MASTER_ID,
+                                                      C.NAME AS MODEL_NAME
                                       FROM MBM_MDM_CLASSIFICATION_PART_LINK CPL
                                                INNER JOIN MBM_MDM_CLASSIFICATION C
                                                           ON C.ID = CPL.CLASSIFICATION_ID
@@ -35,19 +35,6 @@ WITH BOM_F_COUNT AS (SELECT BOM.PRODUCT_ORDER_ID,
                                                               AND (CS.DELETE_FLAG <> '1' OR CS.DELETE_FLAG IS NULL)
                                                               AND CS."NUMBER" = 'product_model'
                                       WHERE (CPL.DELETE_FLAG <> '1' OR CPL.DELETE_FLAG IS NULL)),
-SHIPMENT_MODEL AS (
-    SELECT DISTINCT SHIP.FACTORY_ID, SHIP.BATCH_NO, PMC.MODEL_NAME
-    FROM MBM_APS_PRODUCT_ORDER SHIP
-    INNER JOIN MBM_MDM_PART_VERSION SHIP_PV
-        ON SHIP_PV.ID = SHIP.PART_VERSION_ID
-       AND (SHIP_PV.DELETE_FLAG <> '1' OR SHIP_PV.DELETE_FLAG IS NULL)
-    INNER JOIN PRODUCT_MODEL_CLASSIFICATION PMC
-        ON PMC.PART_VERSION_ID = SHIP_PV.ID
-       AND PMC.PART_MASTER_ID = SHIP_PV.PART_MASTER_ID
-    WHERE SHIP.AUXILIARY_TYPE = 'C'
-      AND (SHIP.DELETE_FLAG <> '1' OR SHIP.DELETE_FLAG IS NULL)
-      AND PMC.MODEL_NAME IS NOT NULL
-),
      FINISHED_RECEIVE_COUNT AS (SELECT PO_D.BATCH_NO,
                                        PM_D."NUMBER" AS PART_NUMBER,
                                        COUNT(*)      AS FINISHED_RECEIVE_COUNT
@@ -78,7 +65,7 @@ SHIPMENT_MODEL AS (
                                 GROUP BY PO_D.BATCH_NO,
                                          PM_D."NUMBER")
 SELECT T.BATCH_NO                                 AS 批次号,
-       SM.MODEL_NAME                              AS 型号,
+       PMC.MODEL_NAME                             AS 型号,
        T.QTY                                      AS 台套,
        CASE
            WHEN REGEXP_LIKE(SUBSTR(T.BATCH_NO, INSTR(T.BATCH_NO, '/', -1) + 1), '^[0-9]+$')
@@ -162,9 +149,8 @@ FROM MBM_APS_PRODUCT_ORDER T
          LEFT JOIN MBM_MDM_WORK_AREA_MASTER FAC_WAM
                    ON FAC.WORK_AREA_MASTER_ID = FAC_WAM.ID
                        AND (FAC_WAM.DELETE_FLAG <> '1' OR FAC_WAM.DELETE_FLAG IS NULL)
-         LEFT JOIN SHIPMENT_MODEL SM ON SM.FACTORY_ID = T.FACTORY_ID AND SM.BATCH_NO = T.BATCH_NO
+         LEFT JOIN PRODUCT_MODEL_CLASSIFICATION PMC ON PMC.PART_VERSION_ID = PV.ID AND PMC.PART_MASTER_ID = PM.ID
 WHERE 1 = 1
   and (T.DELETE_FLAG <> '1' OR T.DELETE_FLAG IS NULL)
   AND INSTR(T.BATCH_NO, 'LS') = 0
-ORDER BY T.BATCH_NO, T."NUMBER"
-
+ORDER BY T.BATCH_NO, T."NUMBER";
