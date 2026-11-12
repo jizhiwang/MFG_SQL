@@ -9,10 +9,11 @@
     <file url="file://$PROJECT_DIR$/MCT项目/根据车号(ID)查询当前工序的工作中心以及工作中心描述.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/18409 IM26100576-结构件钢印号绑定车号错误需纠正.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/20565 IM26111466-临时订单创建BUG.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/20920 IM26115935-MES物料号码和sap物料号码一致，但是确认不了发货通知单，车号XUGB6001HRKA01050.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/Oracle/生产订单.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/MES/Oracle配盘执行进度查询新.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/PostgreSQL配盘执行进度查询新.sql" dialect="Oracle" />
-    <file url="file://$PROJECT_DIR$/MES/临时查询.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/MES/临时查询.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/事务sql.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/事务诊断.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/塔机.sql" dialect="Oracle" />
@@ -24,7 +25,9 @@
     <file url="file://$PROJECT_DIR$/MES/整机实绩湖仓.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/MES/查询工厂建模.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/矿机物料分类.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/重型六合一.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/MES/重型生产周期报表物料版.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/MES/高端产品关键节点管控.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/MESU/add_rack_no.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/数据修复/IM260813374-临时计划已报完已审核完还是显示已填报不是显示未完成.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/禅道周报工单查询/周报.sql" dialect="MySQL" />
